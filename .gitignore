@@ -1,0 +1,11 @@
+target/
+data/
+*.class
+.idea/
+*.iml
+.vscode/
+.mvn/wrapper/maven-wrapper.jar
+*.log
+
+# Separate JSF project with its own git repository - not part of this repo
+DairyFarmManagementSystem/
