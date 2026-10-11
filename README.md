@@ -78,7 +78,7 @@ classDiagram
 |---|---|
 | Language | Java 21 |
 | Framework | Spring Boot 4.1.1 (Spring Web, Spring Data JPA, Bean Validation) |
-| Database | H2 (file-based, default) or PostgreSQL (`postgres` profile) |
+| Database | PostgreSQL 16 (default) or H2 (`h2` profile) |
 | Build | Maven |
 | Testing | Postman / Newman collection (see below) |
 
@@ -104,14 +104,34 @@ live under `com.innovation.dairyfarm.common`.
 
 ## Running the API
 
-### Default (H2, no external database required)
+### Default (PostgreSQL)
 
 ```bash
+docker compose up -d postgres
 mvn spring-boot:run
 ```
 
-The API starts on `http://localhost:8080` and persists to a local H2 file
-(`./data/dairyfarmdb`). The H2 console is available at `/h2-console`.
+The API starts on `http://localhost:8080` and connects to PostgreSQL at
+`localhost:5432`, using database `dairy_farm_db`. Compose stores database files
+in a named volume. Set `DB_URL`, `DB_USERNAME`, and `DB_PASSWORD` to override
+the connection settings.
+
+To stop PostgreSQL while preserving data, run `docker compose down`. To remove
+the database volume as well, run `docker compose down -v`.
+
+### Optional H2 profile
+
+```bash
+mvn spring-boot:run -Dspring-boot.run.profiles=h2
+```
+
+This profile persists to `./data/dairyfarmdb`; its console is available at
+`/h2-console`.
+
+### Legacy PostgreSQL profile
+
+The `postgres` profile remains available for compatibility. PostgreSQL is now
+the default, so it does not need to be activated.
 
 > **Windows note:** if you need a fully clean rebuild, delete the `target/`
 > directory manually (`rm -rf target` or `Remove-Item -Recurse -Force target`)
