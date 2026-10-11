@@ -40,7 +40,8 @@ public class SecurityConfig {
 
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setUserDetailsService(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder());
         return provider;
     }
@@ -63,6 +64,8 @@ public class SecurityConfig {
                         // The join page fetches this before the invitee has an account to authenticate with.
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/invites/*/public").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
+                        // Only farm owners may manage invites.
+                        .requestMatchers("/api/invites", "/api/invites/**").hasRole("FARM_OWNER")
                         .anyRequest().authenticated()
                 )
                 // H2 console renders inside a frame; only reachable at all when the h2 profile is active.
