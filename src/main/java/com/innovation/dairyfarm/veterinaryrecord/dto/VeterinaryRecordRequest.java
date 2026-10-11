@@ -1,5 +1,6 @@
 package com.innovation.dairyfarm.veterinaryrecord.dto;
 
+import com.innovation.dairyfarm.veterinaryrecord.domain.Severity;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -7,24 +8,26 @@ import jakarta.validation.constraints.PastOrPresent;
 
 import java.time.LocalDate;
 
-/** BR-10: visitDate cannot be future, cost cannot be negative. */
+/** BR-10: date cannot be future; cost (when given) cannot be negative. */
 public record VeterinaryRecordRequest(
         @NotNull(message = "cattleId is required")
         Long cattleId,
 
-        @NotNull(message = "visitDate is required")
-        @PastOrPresent(message = "visitDate cannot be in the future")
-        LocalDate visitDate,
+        @NotNull(message = "date is required")
+        @PastOrPresent(message = "date cannot be in the future")
+        LocalDate date,
 
-        @NotBlank(message = "veterinarianName is required")
-        String veterinarianName,
+        @NotBlank(message = "complaint is required")
+        String complaint,
 
-        @NotBlank(message = "diagnosis is required")
-        String diagnosis,
+        String notes,
 
-        String treatment,
+        @NotNull(message = "severity is required")
+        Severity severity,
 
-        @NotNull(message = "cost is required")
+        @NotBlank(message = "treatedBy is required")
+        String treatedBy,
+
         @DecimalMin(value = "0.0", inclusive = true, message = "cost cannot be negative")
         Double cost,
 

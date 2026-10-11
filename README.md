@@ -1,11 +1,13 @@
 # Dairy Farm Management REST API
 
-A Spring Boot REST API implementing full CRUD for three entities from the Dairy Farm
-Management System domain: **Cattle**, **Milk Production**, and **Veterinary Record**.
-It extends the original [DairyFarmManagementSystem](./DairyFarmManagementSystem) (JSF +
-Hibernate) proposal by re-implementing Cattle and Milk Production as a REST API and
-adding Veterinary Record — the animal-health tracking explicitly left out of that
-project's initial scope.
+A Spring Boot REST API implementing full CRUD for six farm-data entities - **Cattle**,
+**Milk Production**, **Veterinary Record**, **Finance Transaction**, **Inventory
+Item**, and **Worker** - behind JWT authentication, with every record scoped to the
+account that owns it. It extends the original
+[DairyFarmManagementSystem](./DairyFarmManagementSystem) (JSF + Hibernate) proposal by
+re-implementing Cattle and Milk Production as a REST API and adding Veterinary Record,
+Finance, Inventory and Workers - the areas explicitly left out of that project's
+initial scope.
 
 ## Abstract
 
@@ -20,14 +22,28 @@ server-side validation and cross-entity business rules enforced in the service l
 - **Milk Production**: per-shift production records linked to a cattle.
 - **Veterinary Record**: health visits linked to a cattle, with a resolve workflow
   that updates the cattle's health status.
+- **Finance Transaction**: income/expense ledger entries.
+- **Inventory Item**: feed, supplies and equipment stock tracking.
+- **Worker**: farm staff records and monthly wages.
+- **Authentication**: JWT-based registration, login (with email OTP as a second
+  factor), email verification, and password reset - see
+  [Authentication](#authentication) below.
 
-Authentication, payments, feed/inventory management, and reporting dashboards are
-outside scope.
+Every one of the six farm-data entities is scoped to the authenticated account
+(see [Multi-tenancy](#multi-tenancy)) - there is no cross-farm visibility.
+Payments processing and reporting dashboards are outside scope.
 
 ## Entity Relationship
 
 ```mermaid
 classDiagram
+    class User {
+      Long id
+      String email
+      String fullName
+      String farmName
+      Role role
+    }
     class Cattle {
       Long id
       String tagNumber
@@ -51,17 +67,53 @@ classDiagram
       LocalDate followUpDate
       Boolean resolved
     }
+    class FinanceTransaction {
+      Long id
+      LocalDate date
+      TransactionType type
+      TransactionCategory category
+      String description
+      Double amount
+      String reference
+    }
+    class InventoryItem {
+      Long id
+      String name
+      InventoryCategory category
+      Double quantity
+      String unit
+      Double reorderLevel
+      Double unitCost
+      EquipmentCondition condition
+    }
+    class Worker {
+      Long id
+      String name
+      WorkerRole role
+      String phone
+      LocalDate startDate
+      EmploymentStatus status
+      Double monthlySalary
+    }
     Cattle "1" --> "0..*" MilkProduction : records
     Cattle "1" --> "0..*" VeterinaryRecord : visits
+    User "1" --> "0..*" Cattle : owns
+    User "1" --> "0..*" FinanceTransaction : owns
+    User "1" --> "0..*" InventoryItem : owns
+    User "1" --> "0..*" Worker : owns
 ```
+
+Every entity other than `User` itself extends a shared `OwnedEntity` base (an
+`owner_id` foreign key to `User`), which is what makes the per-account isolation in
+[Multi-tenancy](#multi-tenancy) possible without repeating the column six times.
 
 ## Business Requirements
 
 | ID | Rule |
 |---|---|
-| BR-01 | Every cattle has a unique tag number, breed, date of birth and health status. |
+| BR-01 | Every cattle has a tag number unique to its owner (not globally - two different farms may each use "001"), plus breed, date of birth and health status. |
 | BR-02 | Cattle date of birth cannot be in the future. |
-| BR-03 | Every milk production and veterinary record must reference an existing cattle. |
+| BR-03 | Every milk production and veterinary record must reference an existing cattle **owned by the same account**. |
 | BR-04 | Milk production stores a date, shift (MORNING/EVENING) and litres produced. |
 | BR-05 | Full CRUD is available for Cattle. |
 | BR-06 | Full CRUD is available for Milk Production. |
@@ -71,13 +123,18 @@ classDiagram
 | BR-10 | Veterinary visit date cannot be future, cost cannot be negative, and a follow-up date (if given) must be after the visit date. |
 | BR-11 | Creating a veterinary record moves the cattle to `UNDER_TREATMENT`; resolving the record (`PATCH /veterinary-records/{id}/resolve`) moves it to `RECOVERED`. |
 | BR-12 | A cattle marked `DECEASED` cannot receive new milk production or veterinary records. |
+| BR-13 | Finance transaction date cannot be in the future; amount must be positive. |
+| BR-14 | Inventory item quantity, reorder level and unit cost cannot be negative. |
+| BR-15 | Worker start date cannot be in the future; monthly salary cannot be negative. |
+| BR-16 | Every record (Cattle, Milk Production, Veterinary Record, Finance, Inventory, Worker) is scoped to the authenticated account; looking up another account's record by ID returns 404, same as if it didn't exist. |
 
 ## Technology Stack
 
 | Item | Detail |
 |---|---|
 | Language | Java 21 |
-| Framework | Spring Boot 4.1.1 (Spring Web, Spring Data JPA, Bean Validation) |
+| Framework | Spring Boot 4.1.1 (Spring Web, Spring Data JPA, Bean Validation, Spring Security, Spring Mail) |
+| Auth | Stateless JWT (HS256, `io.jsonwebtoken`), BCrypt password hashing, email OTP |
 | Database | PostgreSQL 16 (default) or H2 (`h2` profile) |
 | Build | Maven |
 | Testing | Postman / Newman collection (see below) |
@@ -100,9 +157,31 @@ src/main/java/com/innovation/dairyfarm/<entity>/
 ```
 
 Cross-cutting concerns (`BaseEntity`, custom exceptions, `GlobalExceptionHandler`)
-live under `com.innovation.dairyfarm.common`.
+live under `com.innovation.dairyfarm.common`. JWT issuing/validation, the
+`Authorization` header filter, and the Spring Security + CORS configuration
+live under `com.innovation.dairyfarm.security` and apply to every entity
+package above - all `/api/**` routes other than `/api/auth/**` require a
+valid bearer token.
 
 ## Running the API
+
+### Required environment variables
+
+The app needs a JWT signing secret and SMTP credentials before it will start
+and send OTP emails. Copy `.env.example` to `.env` (git-ignored) in this
+folder and fill it in, or export the same variables in your shell:
+
+| Variable | Required | Notes |
+|---|---|---|
+| `JWT_SECRET` | Yes | 32+ byte random string, e.g. `openssl rand -base64 32`. No default - the app fails fast without it. |
+| `MAIL_USERNAME` | Yes | The sending email address. |
+| `MAIL_PASSWORD` | Yes | For Gmail, a 16-character **App Password** (myaccount.google.com/apppasswords, requires 2-Step Verification) - not the normal account password. |
+| `MAIL_FROM` | No | Defaults to `MAIL_USERNAME`. |
+| `JWT_EXPIRATION_MS` | No | Access token lifetime, default 24h. |
+| `OTP_EXPIRATION_MINUTES` | No | Default 10. |
+| `OTP_RESEND_COOLDOWN_SECONDS` | No | Default 30. |
+| `PASSWORD_RESET_EXPIRATION_MINUTES` | No | Default 15. |
+| `CORS_ALLOWED_ORIGINS` | No | Comma-separated frontend origins, default `http://localhost:3000`. |
 
 ### Default (PostgreSQL)
 
@@ -157,6 +236,38 @@ mvn -DskipTests package
 java -jar target/dairyfarm-api-0.0.1-SNAPSHOT.jar
 ```
 
+## Authentication
+
+Every route lives under `/api/auth` and is publicly accessible; everything
+else under `/api/**` requires `Authorization: Bearer <token>`.
+
+| Method | Path | Purpose |
+|---|---|---|
+| POST | `/api/auth/register` | Create an account (unverified) and email a signup OTP. |
+| POST | `/api/auth/login` | Check credentials; on success, email a 2FA OTP (does **not** return a token yet). |
+| POST | `/api/auth/otp/verify` | Verify a 6-digit code. Body: `{email, code, purpose}` where `purpose` is `SIGNUP_VERIFICATION`, `LOGIN_2FA`, or `PASSWORD_RESET`. Returns `{token, user}` for the first two; returns `{resetToken}` for `PASSWORD_RESET`. |
+| POST | `/api/auth/otp/resend` | Re-send a code for `{email, purpose}` (throttled). |
+| POST | `/api/auth/password/forgot` | Request a `PASSWORD_RESET` OTP for `{email}`. Always responds the same way, whether or not the email is registered. |
+| POST | `/api/auth/password/reset` | Exchange `{resetToken, newPassword}` (from the OTP-verify step) for a new password. |
+| GET | `/api/auth/me` | Current authenticated user (requires a bearer token). |
+
+Flow: `register` -> email `SIGNUP_VERIFICATION` code -> `otp/verify` -> signed
+in. `login` -> email `LOGIN_2FA` code -> `otp/verify` -> signed in. Forgot
+password: `password/forgot` -> email `PASSWORD_RESET` code -> `otp/verify`
+(returns `resetToken`) -> `password/reset`.
+
+Security notes:
+- Passwords and OTP codes are hashed (BCrypt) before being stored - never in plaintext.
+- `password/forgot` never reveals whether an email is registered; it only
+  actually sends mail when the account exists, but the HTTP response is
+  identical either way.
+- CORS only allows the origins listed in `CORS_ALLOWED_ORIGINS` (not `*`),
+  since `Authorization` header support requires `allowCredentials(true)`,
+  and the CORS spec disallows pairing that with a wildcard origin.
+- `register`/`login`/OTP flows are each one `@Transactional` unit - if the
+  email fails to send, the whole operation (including the DB write) rolls
+  back, so you never end up with a user that has no way to verify.
+
 ## API Endpoints
 
 | Entity | Method | Path | Purpose |
@@ -177,6 +288,24 @@ java -jar target/dairyfarm-api-0.0.1-SNAPSHOT.jar
 | Veterinary Record | PUT | `/api/veterinary-records/{id}` | Update |
 | Veterinary Record | PATCH | `/api/veterinary-records/{id}/resolve` | Resolve (BR-11) |
 | Veterinary Record | DELETE | `/api/veterinary-records/{id}` | Delete |
+| Finance Transaction | POST | `/api/finance-transactions` | Create |
+| Finance Transaction | GET | `/api/finance-transactions` | List all |
+| Finance Transaction | GET | `/api/finance-transactions/{id}` | Get one |
+| Finance Transaction | PUT | `/api/finance-transactions/{id}` | Update |
+| Finance Transaction | DELETE | `/api/finance-transactions/{id}` | Delete |
+| Inventory Item | POST | `/api/inventory-items` | Create |
+| Inventory Item | GET | `/api/inventory-items` | List all |
+| Inventory Item | GET | `/api/inventory-items/{id}` | Get one |
+| Inventory Item | PUT | `/api/inventory-items/{id}` | Update |
+| Inventory Item | DELETE | `/api/inventory-items/{id}` | Delete |
+| Worker | POST | `/api/workers` | Create |
+| Worker | GET | `/api/workers` | List all |
+| Worker | GET | `/api/workers/{id}` | Get one |
+| Worker | PUT | `/api/workers/{id}` | Update |
+| Worker | DELETE | `/api/workers/{id}` | Delete |
+
+All of the above require `Authorization: Bearer <token>` and only ever
+operate on the caller's own records - see [Multi-tenancy](#multi-tenancy).
 
 Validation and business-rule failures return a structured error body:
 
@@ -217,6 +346,12 @@ npx newman run postman/DairyFarmAPI.postman_collection.json \
 
 Last verified run: **33 requests / 34 assertions, 0 failures.**
 
+> **Note:** this collection predates JWT auth and the three new entities. Every
+> request in it now needs an `Authorization: Bearer <token>` header (obtained via
+> the [Authentication](#authentication) flow) before it will pass again, and
+> there's no coverage yet for Finance, Inventory or Workers. Treat it as due for
+> a refresh rather than as current proof of behavior.
+
 ## CRUD Implementation Matrix
 
 | Entity | Create | Read | Update | Delete |
@@ -224,6 +359,28 @@ Last verified run: **33 requests / 34 assertions, 0 failures.**
 | Cattle | `POST /api/cattle` | `GET /api/cattle`, `GET /api/cattle/{id}` | `PUT /api/cattle/{id}` | `DELETE /api/cattle/{id}` |
 | Milk Production | `POST /api/milk-productions` | `GET /api/milk-productions`, `GET /api/milk-productions/{id}` | `PUT /api/milk-productions/{id}` | `DELETE /api/milk-productions/{id}` |
 | Veterinary Record | `POST /api/veterinary-records` | `GET /api/veterinary-records`, `GET /api/veterinary-records/{id}` | `PUT /api/veterinary-records/{id}` | `DELETE /api/veterinary-records/{id}` |
+| Finance Transaction | `POST /api/finance-transactions` | `GET /api/finance-transactions`, `GET /api/finance-transactions/{id}` | `PUT /api/finance-transactions/{id}` | `DELETE /api/finance-transactions/{id}` |
+| Inventory Item | `POST /api/inventory-items` | `GET /api/inventory-items`, `GET /api/inventory-items/{id}` | `PUT /api/inventory-items/{id}` | `DELETE /api/inventory-items/{id}` |
+| Worker | `POST /api/workers` | `GET /api/workers`, `GET /api/workers/{id}` | `PUT /api/workers/{id}` | `DELETE /api/workers/{id}` |
+
+## Multi-tenancy
+
+Every farm-data entity (Cattle, Milk Production, Veterinary Record, Finance
+Transaction, Inventory Item, Worker) extends a shared `OwnedEntity` base
+(`com.innovation.dairyfarm.common.OwnedEntity`) that adds an `owner_id` foreign
+key to `User`. Each repository exposes owner-scoped finders
+(`findAllByOwnerId`, `findByIdAndOwnerId`, ...) and every service method takes
+the caller's id (or full `User`, when creating) pulled from the JWT via
+`com.innovation.dairyfarm.security.CurrentUser` - controllers never trust a
+client-supplied owner.
+
+Two consequences worth knowing:
+- Looking up another account's record by ID returns a plain 404, identical to
+  a record that doesn't exist at all - it never leaks that the ID belongs to
+  someone else.
+- Cattle tag-number uniqueness (BR-01) is enforced **per owner**, both at the
+  service layer and with a composite DB unique constraint on
+  `(tag_number, owner_id)` - two different farms can both register a "001".
 
 ## Links
 

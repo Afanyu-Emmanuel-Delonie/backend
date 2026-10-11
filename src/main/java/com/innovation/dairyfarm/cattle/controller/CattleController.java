@@ -3,10 +3,12 @@ package com.innovation.dairyfarm.cattle.controller;
 import com.innovation.dairyfarm.cattle.dto.CattleRequest;
 import com.innovation.dairyfarm.cattle.dto.CattleResponse;
 import com.innovation.dairyfarm.cattle.service.CattleService;
+import com.innovation.dairyfarm.security.CurrentUser;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.net.URI;
 import java.util.List;
 
-/** BR-05: create, read, update and delete operations for Cattle. */
+/** BR-05: create, read, update and delete operations for Cattle, scoped to the authenticated owner. */
 @RestController
 @RequestMapping("/api/cattle")
 @RequiredArgsConstructor
@@ -29,29 +31,29 @@ public class CattleController {
     private final CattleService cattleService;
 
     @PostMapping
-    public ResponseEntity<CattleResponse> create(@Valid @RequestBody CattleRequest request) {
-        CattleResponse response = CattleResponse.from(cattleService.create(request));
+    public ResponseEntity<CattleResponse> create(@Valid @RequestBody CattleRequest request, Authentication authentication) {
+        CattleResponse response = CattleResponse.from(cattleService.create(CurrentUser.user(authentication), request));
         return ResponseEntity.created(URI.create("/api/cattle/" + response.id())).body(response);
     }
 
     @GetMapping
-    public List<CattleResponse> findAll() {
-        return cattleService.findAll().stream().map(CattleResponse::from).toList();
+    public List<CattleResponse> findAll(Authentication authentication) {
+        return cattleService.findAll(CurrentUser.id(authentication)).stream().map(CattleResponse::from).toList();
     }
 
     @GetMapping("/{id}")
-    public CattleResponse findById(@PathVariable Long id) {
-        return CattleResponse.from(cattleService.findById(id));
+    public CattleResponse findById(@PathVariable Long id, Authentication authentication) {
+        return CattleResponse.from(cattleService.findById(CurrentUser.id(authentication), id));
     }
 
     @PutMapping("/{id}")
-    public CattleResponse update(@PathVariable Long id, @Valid @RequestBody CattleRequest request) {
-        return CattleResponse.from(cattleService.update(id, request));
+    public CattleResponse update(@PathVariable Long id, @Valid @RequestBody CattleRequest request, Authentication authentication) {
+        return CattleResponse.from(cattleService.update(CurrentUser.id(authentication), id, request));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Long id) {
-        cattleService.delete(id);
+    public void delete(@PathVariable Long id, Authentication authentication) {
+        cattleService.delete(CurrentUser.id(authentication), id);
     }
 }

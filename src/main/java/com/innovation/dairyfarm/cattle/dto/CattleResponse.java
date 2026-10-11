@@ -12,6 +12,12 @@ public record CattleResponse(
         String breed,
         LocalDate dateOfBirth,
         HealthStatus healthStatus,
+        Double estimatedValue,
+        LocalDate purchaseDate,
+        Double purchasePrice,
+        LocalDate deceasedDate,
+        LocalDate soldDate,
+        Double soldPrice,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {
@@ -22,6 +28,12 @@ public record CattleResponse(
                 cattle.getBreed(),
                 cattle.getDateOfBirth(),
                 cattle.getHealthStatus(),
+                cattle.getEstimatedValue(),
+                cattle.getPurchaseDate(),
+                cattle.getPurchasePrice(),
+                cattle.getDeceasedDate(),
+                cattle.getSoldDate(),
+                cattle.getSoldPrice(),
                 cattle.getCreatedAt(),
                 cattle.getUpdatedAt()
         );

@@ -4,12 +4,14 @@ import com.innovation.dairyfarm.auth.domain.OtpPurpose;
 import com.innovation.dairyfarm.auth.domain.PasswordResetToken;
 import com.innovation.dairyfarm.auth.domain.Role;
 import com.innovation.dairyfarm.auth.domain.User;
+import com.innovation.dairyfarm.auth.dto.ChangePasswordRequest;
 import com.innovation.dairyfarm.auth.dto.ForgotPasswordRequest;
 import com.innovation.dairyfarm.auth.dto.LoginRequest;
 import com.innovation.dairyfarm.auth.dto.OtpVerifyResponse;
 import com.innovation.dairyfarm.auth.dto.RegisterRequest;
 import com.innovation.dairyfarm.auth.dto.ResendOtpRequest;
 import com.innovation.dairyfarm.auth.dto.ResetPasswordRequest;
+import com.innovation.dairyfarm.auth.dto.UpdateProfileRequest;
 import com.innovation.dairyfarm.auth.dto.UserResponse;
 import com.innovation.dairyfarm.auth.dto.VerifyOtpRequest;
 import com.innovation.dairyfarm.auth.repository.PasswordResetTokenRepository;
@@ -69,7 +71,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public void login(LoginRequest request) {
+    public OtpVerifyResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new InvalidCredentialsException("Invalid email or password"));
 
@@ -83,7 +85,7 @@ public class AuthServiceImpl implements AuthService {
             throw new InvalidCredentialsException("Invalid email or password");
         }
 
-        otpService.generateAndSend(user.getEmail(), OtpPurpose.LOGIN_2FA);
+        return OtpVerifyResponse.signedIn(jwtService.generateToken(user), UserResponse.from(user));
     }
 
     @Override
@@ -151,5 +153,33 @@ public class AuthServiceImpl implements AuthService {
     public UserResponse getCurrentUser(String email) {
         return UserResponse.from(userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found")));
+    }
+
+    @Override
+    public UserResponse updateProfile(String email, UpdateProfileRequest request) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        user.setFullName(request.fullName());
+        user.setFarmName(request.farmName());
+        user.setPhone(request.phone());
+        return UserResponse.from(userRepository.save(user));
+    }
+
+    @Override
+    public void changePassword(String email, ChangePasswordRequest request) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+            throw new InvalidCredentialsException("Current password is incorrect");
+        }
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
+    }
+
+    @Override
+    public void deleteAccount(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        userRepository.delete(user);
     }
 }

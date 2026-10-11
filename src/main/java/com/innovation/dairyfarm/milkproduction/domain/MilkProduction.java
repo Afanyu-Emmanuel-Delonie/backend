@@ -1,7 +1,7 @@
 package com.innovation.dairyfarm.milkproduction.domain;
 
 import com.innovation.dairyfarm.cattle.domain.Cattle;
-import com.innovation.dairyfarm.common.BaseEntity;
+import com.innovation.dairyfarm.common.OwnedEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -32,7 +32,7 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class MilkProduction extends BaseEntity {
+public class MilkProduction extends OwnedEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cattle_id", nullable = false)

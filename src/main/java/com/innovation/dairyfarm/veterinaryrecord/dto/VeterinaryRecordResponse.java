@@ -1,5 +1,6 @@
 package com.innovation.dairyfarm.veterinaryrecord.dto;
 
+import com.innovation.dairyfarm.veterinaryrecord.domain.Severity;
 import com.innovation.dairyfarm.veterinaryrecord.domain.VeterinaryRecord;
 
 import java.time.LocalDate;
@@ -9,10 +10,11 @@ public record VeterinaryRecordResponse(
         Long id,
         Long cattleId,
         String cattleTagNumber,
-        LocalDate visitDate,
-        String veterinarianName,
-        String diagnosis,
-        String treatment,
+        LocalDate date,
+        String complaint,
+        String notes,
+        Severity severity,
+        String treatedBy,
         Double cost,
         LocalDate followUpDate,
         Boolean resolved,
@@ -24,10 +26,11 @@ public record VeterinaryRecordResponse(
                 record.getId(),
                 record.getCattle().getId(),
                 record.getCattle().getTagNumber(),
-                record.getVisitDate(),
-                record.getVeterinarianName(),
-                record.getDiagnosis(),
-                record.getTreatment(),
+                record.getDate(),
+                record.getComplaint(),
+                record.getNotes(),
+                record.getSeverity(),
+                record.getTreatedBy(),
                 record.getCost(),
                 record.getFollowUpDate(),
                 record.getResolved(),

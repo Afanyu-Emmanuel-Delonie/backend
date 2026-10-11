@@ -1,6 +1,7 @@
 package com.innovation.dairyfarm.cattle.dto;
 
 import com.innovation.dairyfarm.cattle.domain.HealthStatus;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -22,6 +23,16 @@ public record CattleRequest(
         LocalDate dateOfBirth,
 
         @NotNull(message = "healthStatus is required")
-        HealthStatus healthStatus
+        HealthStatus healthStatus,
+
+        @NotNull(message = "estimatedValue is required")
+        @DecimalMin(value = "0.01", message = "estimatedValue must be positive")
+        Double estimatedValue,
+
+        LocalDate purchaseDate,
+        Double purchasePrice,
+        LocalDate deceasedDate,
+        LocalDate soldDate,
+        Double soldPrice
 ) {
 }

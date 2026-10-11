@@ -1,5 +1,6 @@
 package com.innovation.dairyfarm.auth.controller;
 
+import com.innovation.dairyfarm.auth.dto.ChangePasswordRequest;
 import com.innovation.dairyfarm.auth.dto.ForgotPasswordRequest;
 import com.innovation.dairyfarm.auth.dto.LoginRequest;
 import com.innovation.dairyfarm.auth.dto.MessageResponse;
@@ -7,6 +8,7 @@ import com.innovation.dairyfarm.auth.dto.OtpVerifyResponse;
 import com.innovation.dairyfarm.auth.dto.RegisterRequest;
 import com.innovation.dairyfarm.auth.dto.ResendOtpRequest;
 import com.innovation.dairyfarm.auth.dto.ResetPasswordRequest;
+import com.innovation.dairyfarm.auth.dto.UpdateProfileRequest;
 import com.innovation.dairyfarm.auth.dto.UserResponse;
 import com.innovation.dairyfarm.auth.dto.VerifyOtpRequest;
 import com.innovation.dairyfarm.auth.service.AuthService;
@@ -15,7 +17,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -36,9 +40,8 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public MessageResponse login(@Valid @RequestBody LoginRequest request) {
-        authService.login(request);
-        return MessageResponse.of("A verification code has been sent to your email.");
+    public OtpVerifyResponse login(@Valid @RequestBody LoginRequest request) {
+        return authService.login(request);
     }
 
     @PostMapping("/otp/verify")
@@ -67,5 +70,22 @@ public class AuthController {
     @GetMapping("/me")
     public UserResponse me(Authentication authentication) {
         return authService.getCurrentUser(authentication.getName());
+    }
+
+    @PatchMapping("/me")
+    public UserResponse updateProfile(@Valid @RequestBody UpdateProfileRequest request, Authentication authentication) {
+        return authService.updateProfile(authentication.getName(), request);
+    }
+
+    @PatchMapping("/me/password")
+    public MessageResponse changePassword(@Valid @RequestBody ChangePasswordRequest request, Authentication authentication) {
+        authService.changePassword(authentication.getName(), request);
+        return MessageResponse.of("Password updated successfully.");
+    }
+
+    @DeleteMapping("/me")
+    public ResponseEntity<Void> deleteAccount(Authentication authentication) {
+        authService.deleteAccount(authentication.getName());
+        return ResponseEntity.noContent().build();
     }
 }
