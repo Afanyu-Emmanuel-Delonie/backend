@@ -5,12 +5,13 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AlertCircle, CheckCircle2, Loader2, Lock, Mail } from "lucide-react";
 import { AuthField } from "@/components/auth/AuthField";
-import { ApiError, login as apiLogin, saveSession } from "@/lib/auth-api";
+import { ApiError, backendUrl, login as apiLogin, saveSession } from "@/lib/auth-api";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const resetDone = searchParams.get("reset") === "1";
+  const oauthError = searchParams.get("error");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -60,10 +61,10 @@ function LoginForm() {
         </div>
       )}
 
-      {serverError && (
+      {(serverError || oauthError) && (
         <div className="mb-5 flex items-start gap-2 rounded-xl border border-rose-100 bg-rose-50 p-3 text-xs text-rose-600">
           <AlertCircle className="h-4 w-4 shrink-0" />
-          <span>{serverError}</span>
+          <span>{serverError || oauthError}</span>
         </div>
       )}
 
@@ -106,6 +107,25 @@ function LoginForm() {
           {loading ? "Signing in…" : "Sign in"}
         </button>
       </form>
+
+      <div className="my-5 flex items-center gap-3">
+        <div className="h-px flex-1 bg-gray-200" />
+        <span className="text-xs text-gray-400">or</span>
+        <div className="h-px flex-1 bg-gray-200" />
+      </div>
+
+      <a
+        href={`${backendUrl()}/oauth2/authorization/google`}
+        className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50"
+      >
+        <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
+          <path fill="#4285F4" d="M23.52 12.27c0-.85-.08-1.67-.22-2.45H12v4.64h6.46c-.28 1.5-1.13 2.78-2.4 3.63v3.02h3.88c2.27-2.09 3.58-5.17 3.58-8.84z" />
+          <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.94-2.9l-3.88-3.01c-1.08.72-2.45 1.15-4.06 1.15-3.12 0-5.77-2.11-6.71-4.94H1.28v3.1C3.26 21.3 7.3 24 12 24z" />
+          <path fill="#FBBC05" d="M5.29 14.3a7.2 7.2 0 0 1 0-4.6V6.6H1.28a12 12 0 0 0 0 10.8z" />
+          <path fill="#EA4335" d="M12 4.75c1.76 0 3.34.6 4.58 1.79l3.44-3.44C17.94 1.19 15.24 0 12 0 7.3 0 3.26 2.7 1.28 6.6l4.01 3.1C6.23 6.86 8.88 4.75 12 4.75z" />
+        </svg>
+        Continue with Google
+      </a>
 
       <p className="mt-6 text-center text-sm text-gray-500">
         Don&apos;t have an account?{" "}
