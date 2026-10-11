@@ -1,7 +1,9 @@
 package com.innovation.dairyfarm.auth.service;
 
 import com.innovation.dairyfarm.auth.domain.OtpPurpose;
+import com.innovation.dairyfarm.auth.domain.Role;
 import com.innovation.dairyfarm.messaging.EmailMessage;
+import com.innovation.dairyfarm.messaging.InviteEmailMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -27,9 +29,19 @@ public class EmailServiceImpl implements EmailService {
     @Value("${app.rabbitmq.email-routing-key}")
     private String emailRoutingKey;
 
+    @Value("${app.rabbitmq.invite-email-routing-key}")
+    private String inviteEmailRoutingKey;
+
     @Override
     public void sendOtpEmail(String to, String code, OtpPurpose purpose) {
         rabbitTemplate.convertAndSend(emailExchange, emailRoutingKey, new EmailMessage(to, code, purpose));
         log.info("Queued {} email for {}", purpose, to);
+    }
+
+    @Override
+    public void sendInviteEmail(String to, String farmName, Role role, Long inviteId) {
+        rabbitTemplate.convertAndSend(emailExchange, inviteEmailRoutingKey,
+                new InviteEmailMessage(to, farmName, role, inviteId));
+        log.info("Queued invite email for {} (invite {})", to, inviteId);
     }
 }

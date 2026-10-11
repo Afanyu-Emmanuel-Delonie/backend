@@ -1,6 +1,8 @@
 package com.innovation.dairyfarm.invite.controller;
 
+import com.innovation.dairyfarm.auth.service.EmailService;
 import com.innovation.dairyfarm.common.exception.ResourceNotFoundException;
+import com.innovation.dairyfarm.farm.domain.Farm;
 import com.innovation.dairyfarm.invite.domain.Invite;
 import com.innovation.dairyfarm.invite.domain.InviteStatus;
 import com.innovation.dairyfarm.invite.dto.InvitePublicResponse;
@@ -24,6 +26,7 @@ import java.util.List;
 public class InviteController {
 
     private final InviteRepository inviteRepository;
+    private final EmailService emailService;
 
     @GetMapping
     public List<InviteResponse> findAll(Authentication authentication) {
@@ -41,13 +44,15 @@ public class InviteController {
 
     @PostMapping
     public ResponseEntity<InviteResponse> create(@Valid @RequestBody InviteRequest request, Authentication authentication) {
+        Farm farm = CurrentUser.farm(authentication);
         Invite invite = Invite.builder()
                 .email(request.email())
                 .role(request.role())
                 .status(InviteStatus.PENDING)
                 .build();
-        invite.setFarm(CurrentUser.farm(authentication));
+        invite.setFarm(farm);
         Invite saved = inviteRepository.save(invite);
+        emailService.sendInviteEmail(saved.getEmail(), farm.getName(), saved.getRole(), saved.getId());
         return ResponseEntity.created(URI.create("/api/invites/" + saved.getId()))
                 .body(InviteResponse.from(saved));
     }

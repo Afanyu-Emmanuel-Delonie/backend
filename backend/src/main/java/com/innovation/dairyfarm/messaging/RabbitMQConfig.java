@@ -31,6 +31,12 @@ public class RabbitMQConfig {
     @Value("${app.rabbitmq.email-routing-key}")
     private String emailRoutingKey;
 
+    @Value("${app.rabbitmq.invite-email-queue}")
+    private String inviteEmailQueue;
+
+    @Value("${app.rabbitmq.invite-email-routing-key}")
+    private String inviteEmailRoutingKey;
+
     @Bean
     public DirectExchange emailExchange() {
         return new DirectExchange(emailExchange);
@@ -44,6 +50,16 @@ public class RabbitMQConfig {
     @Bean
     public Binding emailBinding(Queue emailQueue, DirectExchange emailExchange) {
         return BindingBuilder.bind(emailQueue).to(emailExchange).with(emailRoutingKey);
+    }
+
+    @Bean
+    public Queue inviteEmailQueue() {
+        return new Queue(inviteEmailQueue, true);
+    }
+
+    @Bean
+    public Binding inviteEmailBinding(Queue inviteEmailQueue, DirectExchange emailExchange) {
+        return BindingBuilder.bind(inviteEmailQueue).to(emailExchange).with(inviteEmailRoutingKey);
     }
 
     @Bean
