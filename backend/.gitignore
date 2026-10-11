@@ -1,0 +1,16 @@
+target/
+data/
+*.class
+.idea/
+*.iml
+.vscode/
+.mvn/wrapper/maven-wrapper.jar
+*.log
+
+# Local secrets — never commit these
+.env
+.env.local
+.env.*.local
+
+# Separate JSF project with its own git repository - not part of this repo
+DairyFarmManagementSystem/

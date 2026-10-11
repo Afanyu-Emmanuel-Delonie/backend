@@ -1,0 +1,29 @@
+# ── Backend ───────────────────────────────────────────────────────────────────
+backend/target/
+backend/data/
+backend/*.class
+backend/.idea/
+backend/*.iml
+backend/.vscode/
+backend/.mvn/wrapper/maven-wrapper.jar
+backend/*.log
+backend/DairyFarmManagementSystem/
+
+# ── Frontend ──────────────────────────────────────────────────────────────────
+frontend/.next/
+frontend/node_modules/
+frontend/*.tsbuildinfo
+
+# ── Secrets — never commit ────────────────────────────────────────────────────
+**/.env
+**/.env.local
+**/.env.*.local
+
+# ── OS / editor ───────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# ── History snapshots (IDE artefact) ─────────────────────────────────────────
+.history/
