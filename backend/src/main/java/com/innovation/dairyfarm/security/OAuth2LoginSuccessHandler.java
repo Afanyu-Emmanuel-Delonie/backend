@@ -11,6 +11,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -29,6 +30,13 @@ import java.util.UUID;
  * does after OTP verification. A first-time Google sign-in self-registers a new Farm and
  * a FARM_OWNER account, mirroring {@code AuthServiceImpl.register}; there is no invite-only
  * path through Google since an invite is tied to a specific email a person didn't choose.
+ *
+ * <p>Uses its own {@link PasswordEncoder} instance rather than the shared bean from {@code
+ * SecurityConfig}: that bean is itself a dependency of {@code SecurityConfig}, and injecting
+ * it here would create {@code SecurityConfig -> OAuth2LoginSuccessHandler -> PasswordEncoder
+ * (defined in SecurityConfig)} — a circular bean dependency Spring cannot resolve. The
+ * value only ever backs a throwaway, never-used password for Google-only accounts, so a
+ * second BCrypt instance costs nothing.
  */
 @Component
 @RequiredArgsConstructor
@@ -36,8 +44,9 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
     private final UserRepository userRepository;
     private final FarmRepository farmRepository;
-    private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+
+    private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     @Value("${app.frontend.url}")
     private String frontendUrl;

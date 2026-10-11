@@ -11,7 +11,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -34,7 +33,6 @@ class OAuth2LoginSuccessHandlerTest {
 
     private UserRepository userRepository;
     private FarmRepository farmRepository;
-    private PasswordEncoder passwordEncoder;
     private JwtService jwtService;
     private OAuth2LoginSuccessHandler handler;
 
@@ -46,16 +44,13 @@ class OAuth2LoginSuccessHandlerTest {
     void setUp() {
         userRepository = mock(UserRepository.class);
         farmRepository = mock(FarmRepository.class);
-        passwordEncoder = mock(PasswordEncoder.class);
         jwtService = mock(JwtService.class);
-        handler = new OAuth2LoginSuccessHandler(userRepository, farmRepository, passwordEncoder, jwtService);
+        handler = new OAuth2LoginSuccessHandler(userRepository, farmRepository, jwtService);
         ReflectionTestUtils.setField(handler, "frontendUrl", "http://localhost:3000");
 
         request = mock(HttpServletRequest.class);
         response = mock(HttpServletResponse.class);
         authentication = mock(Authentication.class);
-
-        when(passwordEncoder.encode(any())).thenReturn("$2a$encoded");
     }
 
     private OAuth2User googleUser(String email, String name) {
