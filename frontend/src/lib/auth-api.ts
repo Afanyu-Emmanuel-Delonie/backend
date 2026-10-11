@@ -162,3 +162,25 @@ export async function deleteAccount() {
 export function updateStoredUser(user: UserResponse) {
   try { localStorage.setItem(USER_KEY, JSON.stringify(user)); } catch { /* ignore */ }
 }
+
+/** The backend's own origin (not the Next.js rewrite proxy) - needed for a full-page
+ *  navigation to Spring Security's OAuth2 endpoint, which isn't under /api. */
+export function backendUrl(): string {
+  return process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080";
+}
+
+/**
+ * Finishes a Google sign-in: the backend's OAuth2 success handler redirects here with a
+ * JWT already issued (same shape as password login), so this just has to store it and
+ * fetch the profile it belongs to - mirrors what saveSession does after a normal login.
+ */
+export async function loginWithToken(token: string): Promise<UserResponse> {
+  try {
+    localStorage.setItem(TOKEN_KEY, token);
+  } catch {
+    // localStorage unavailable - the session just won't persist across reloads.
+  }
+  const user = await authFetch<UserResponse>("/api/auth/me");
+  updateStoredUser(user);
+  return user;
+}

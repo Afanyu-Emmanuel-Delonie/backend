@@ -1,6 +1,9 @@
 package com.innovation.dairyfarm.invite.controller;
 
+import com.innovation.dairyfarm.auth.service.EmailService;
 import com.innovation.dairyfarm.common.exception.ResourceNotFoundException;
+import com.innovation.dairyfarm.farm.domain.Farm;
+import com.innovation.dairyfarm.farm.repository.FarmRepository;
 import com.innovation.dairyfarm.invite.domain.Invite;
 import com.innovation.dairyfarm.invite.domain.InviteStatus;
 import com.innovation.dairyfarm.invite.dto.InvitePublicResponse;
@@ -24,6 +27,8 @@ import java.util.List;
 public class InviteController {
 
     private final InviteRepository inviteRepository;
+    private final FarmRepository farmRepository;
+    private final EmailService emailService;
 
     @GetMapping
     public List<InviteResponse> findAll(Authentication authentication) {
@@ -48,6 +53,15 @@ public class InviteController {
                 .build();
         invite.setFarm(CurrentUser.farm(authentication));
         Invite saved = inviteRepository.save(invite);
+
+        // The Farm on the authenticated principal is a lazy proxy detached from any session
+        // by the time it reaches here (it was loaded back in JwtAuthenticationFilter) - its
+        // id is safe to read off the proxy, but a fresh fetch is needed for the name.
+        String farmName = farmRepository.findById(CurrentUser.farmId(authentication))
+                .map(Farm::getName)
+                .orElse("your farm");
+        emailService.sendInviteEmail(saved.getEmail(), farmName, saved.getRole(), saved.getId());
+
         return ResponseEntity.created(URI.create("/api/invites/" + saved.getId()))
                 .body(InviteResponse.from(saved));
     }

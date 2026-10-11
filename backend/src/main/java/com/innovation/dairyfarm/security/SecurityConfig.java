@@ -62,7 +62,11 @@ public class SecurityConfig {
                 .authenticationProvider(authenticationProvider())
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(restAuthenticationEntryPoint))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()
+                        // Only the pre-auth flows are public - "/api/auth/**" alone would also cover
+                        // /api/auth/me and friends, which read Authentication directly and NPE on an
+                        // anonymous request instead of ever getting a chance to reject it with 401.
+                        .requestMatchers("/api/auth/register", "/api/auth/join", "/api/auth/login",
+                                "/api/auth/otp/**", "/api/auth/password/**").permitAll()
                         // The join page fetches this before the invitee has an account to authenticate with.
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/invites/*/public").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
