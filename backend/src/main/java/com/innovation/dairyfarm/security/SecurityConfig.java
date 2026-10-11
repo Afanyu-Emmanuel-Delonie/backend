@@ -29,6 +29,8 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CustomUserDetailsService userDetailsService;
     private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
+    private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
+    private final OAuth2LoginFailureHandler oAuth2LoginFailureHandler;
 
     @Value("${app.cors.allowed-origins}")
     private String allowedOrigins;
@@ -64,12 +66,17 @@ public class SecurityConfig {
                         // The join page fetches this before the invitee has an account to authenticate with.
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/invites/*/public").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
+                        // Google OAuth2 handshake: redirect-to-Google and the callback it returns to.
+                        .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
                         // Only farm owners may manage invites.
                         .requestMatchers("/api/invites", "/api/invites/**").hasRole("FARM_OWNER")
                         .anyRequest().authenticated()
                 )
                 // H2 console renders inside a frame; only reachable at all when the h2 profile is active.
                 .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
+                .oauth2Login(oauth2 -> oauth2
+                        .successHandler(oAuth2LoginSuccessHandler)
+                        .failureHandler(oAuth2LoginFailureHandler))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
