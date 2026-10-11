@@ -41,7 +41,7 @@ All three roles belong to exactly one `Farm` — this is the tenancy boundary th
 
 **In scope (mid-term):** the items above, built as a Next.js frontend + Spring Boot/PostgreSQL REST backend with JWT authentication, role-based route guards, and farm-scoped multi-tenancy.
 
-**Explicitly out of scope (for now):** a non-relational database, message-queue–based async processing (RabbitMQ), and OAuth2 third-party login — these are final-term rubric items that have not been started and are deliberately deferred rather than bolted on prematurely.
+**Explicitly out of scope (for now):** a non-relational database — this final-term rubric item has not been started and is deliberately deferred rather than bolted on prematurely. RabbitMQ-based async messaging and OAuth2 (Google) login, both also final-term items, have since been implemented (see §4.1 and §9).
 
 ## 4. Functional & Business Requirements
 
@@ -58,6 +58,15 @@ All three roles belong to exactly one `Farm` — this is the tenancy boundary th
 | Finance Transaction | `/api/finance-transactions` | create, list, get by id, update, delete |
 | Inventory Item | `/api/inventory-items` | create, list, get by id, update, delete |
 | Worker | `/api/workers` | create, list, get by id, update, delete |
+| Google OAuth2 | `/oauth2/authorization/google`, `/login/oauth2/code/google` | Spring Security–managed handshake; on success, issues the same JWT shape as password login and redirects to the SPA with it |
+
+### Asynchronous email delivery (RabbitMQ)
+
+OTP and invite emails are no longer sent inline on the request thread. `EmailServiceImpl.sendOtpEmail(...)` now publishes an `EmailMessage` to a `farmiq.email.otp` queue via `RabbitTemplate`; a separate `@RabbitListener` (`OtpEmailConsumer`) picks it up and performs the actual SMTP send. This means a `register`/`login`/invite request returns as soon as the message is queued, instead of blocking on a mail server round trip, and a slow or failing SMTP provider can never make an unrelated API request time out. Verified end-to-end locally: a registration call queues a message, the RabbitMQ management API confirms it is picked up and acknowledged by the one active consumer, with the queue back to zero messages.
+
+### Google sign-in (OAuth2)
+
+`OAuth2LoginSuccessHandler` finds-or-creates a `User` for the Google-authenticated email (self-registering a new `Farm` + `FARM_OWNER` account on first sign-in, mirroring the normal register flow) and redirects to `{frontend}/oauth2/callback?token=...` with a JWT of the same shape normal login issues. The Google client registration is built from `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` env vars rather than Spring Boot's property-bound autoconfiguration, specifically so that an unset credential degrades to "the button exists but 404s" instead of failing application startup entirely — verified by booting the app with blank credentials and confirming it starts cleanly and serves every other route normally.
 
 ### 4.2 Business Rules
 

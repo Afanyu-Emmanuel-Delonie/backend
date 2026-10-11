@@ -473,7 +473,7 @@ export default function WorkersPage() {
       )}
 
       {open && <AddWorkerPanel onClose={() => setOpen(false)} onAdd={addWorker} />}
-      {inviteOpen && (
+      {isOwner && inviteOpen && (
         <SendInvitePanel
           onClose={() => setInviteOpen(false)}
           onSent={(inv) => { setInvites((prev) => [inv, ...prev]); setInviteOpen(false); }}
