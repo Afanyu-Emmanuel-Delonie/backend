@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface VeterinaryRecordRepository extends JpaRepository<VeterinaryRecord, Long> {
-    List<VeterinaryRecord> findAllByOwnerId(Long ownerId);
-    List<VeterinaryRecord> findByCattleIdAndOwnerId(Long cattleId, Long ownerId);
-    Optional<VeterinaryRecord> findByIdAndOwnerId(Long id, Long ownerId);
+    List<VeterinaryRecord> findAllByFarmId(Long farmId);
+    List<VeterinaryRecord> findByCattleIdAndFarmId(Long cattleId, Long farmId);
+    Optional<VeterinaryRecord> findByIdAndFarmId(Long id, Long farmId);
 }

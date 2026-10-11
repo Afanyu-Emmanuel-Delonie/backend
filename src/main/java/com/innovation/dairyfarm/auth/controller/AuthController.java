@@ -2,6 +2,7 @@ package com.innovation.dairyfarm.auth.controller;
 
 import com.innovation.dairyfarm.auth.dto.ChangePasswordRequest;
 import com.innovation.dairyfarm.auth.dto.ForgotPasswordRequest;
+import com.innovation.dairyfarm.auth.dto.JoinRequest;
 import com.innovation.dairyfarm.auth.dto.LoginRequest;
 import com.innovation.dairyfarm.auth.dto.MessageResponse;
 import com.innovation.dairyfarm.auth.dto.OtpVerifyResponse;
@@ -37,6 +38,13 @@ public class AuthController {
         authService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(MessageResponse.of("Registration successful. Check your email for a verification code."));
+    }
+
+    @PostMapping("/join")
+    public ResponseEntity<MessageResponse> join(@Valid @RequestBody JoinRequest request) {
+        authService.join(request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(MessageResponse.of("Account created. Check your email for a verification code."));
     }
 
     @PostMapping("/login")

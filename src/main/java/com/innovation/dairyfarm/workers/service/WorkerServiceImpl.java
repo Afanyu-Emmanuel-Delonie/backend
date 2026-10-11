@@ -1,7 +1,7 @@
 package com.innovation.dairyfarm.workers.service;
 
-import com.innovation.dairyfarm.auth.domain.User;
 import com.innovation.dairyfarm.common.exception.ResourceNotFoundException;
+import com.innovation.dairyfarm.farm.domain.Farm;
 import com.innovation.dairyfarm.workers.domain.Worker;
 import com.innovation.dairyfarm.workers.dto.WorkerRequest;
 import com.innovation.dairyfarm.workers.repository.WorkerRepository;
@@ -19,7 +19,7 @@ public class WorkerServiceImpl implements WorkerService {
     private final WorkerRepository workerRepository;
 
     @Override
-    public Worker create(User owner, WorkerRequest request) {
+    public Worker create(Farm farm, WorkerRequest request) {
         Worker worker = Worker.builder()
                 .name(request.name())
                 .role(request.role())
@@ -28,13 +28,13 @@ public class WorkerServiceImpl implements WorkerService {
                 .status(request.status())
                 .monthlySalary(request.monthlySalary())
                 .build();
-        worker.setOwner(owner);
+        worker.setFarm(farm);
         return workerRepository.save(worker);
     }
 
     @Override
-    public Worker update(Long ownerId, Long id, WorkerRequest request) {
-        Worker worker = findById(ownerId, id);
+    public Worker update(Long farmId, Long id, WorkerRequest request) {
+        Worker worker = findById(farmId, id);
         worker.setName(request.name());
         worker.setRole(request.role());
         worker.setPhone(request.phone());
@@ -45,21 +45,21 @@ public class WorkerServiceImpl implements WorkerService {
     }
 
     @Override
-    public void delete(Long ownerId, Long id) {
-        Worker worker = findById(ownerId, id);
+    public void delete(Long farmId, Long id) {
+        Worker worker = findById(farmId, id);
         workerRepository.delete(worker);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Worker findById(Long ownerId, Long id) {
-        return workerRepository.findByIdAndOwnerId(id, ownerId)
+    public Worker findById(Long farmId, Long id) {
+        return workerRepository.findByIdAndFarmId(id, farmId)
                 .orElseThrow(() -> new ResourceNotFoundException("Worker not found with id " + id));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Worker> findAll(Long ownerId) {
-        return workerRepository.findAllByOwnerId(ownerId);
+    public List<Worker> findAll(Long farmId) {
+        return workerRepository.findAllByFarmId(farmId);
     }
 }

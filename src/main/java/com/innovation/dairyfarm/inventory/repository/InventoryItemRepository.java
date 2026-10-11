@@ -7,6 +7,6 @@ import java.util.List;
 import java.util.Optional;
 
 public interface InventoryItemRepository extends JpaRepository<InventoryItem, Long> {
-    List<InventoryItem> findAllByOwnerId(Long ownerId);
-    Optional<InventoryItem> findByIdAndOwnerId(Long id, Long ownerId);
+    List<InventoryItem> findAllByFarmId(Long farmId);
+    Optional<InventoryItem> findByIdAndFarmId(Long id, Long farmId);
 }

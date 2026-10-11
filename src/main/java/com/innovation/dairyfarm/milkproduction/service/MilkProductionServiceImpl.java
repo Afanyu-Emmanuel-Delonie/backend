@@ -1,12 +1,12 @@
 package com.innovation.dairyfarm.milkproduction.service;
 
-import com.innovation.dairyfarm.auth.domain.User;
 import com.innovation.dairyfarm.cattle.domain.Cattle;
 import com.innovation.dairyfarm.cattle.domain.HealthStatus;
 import com.innovation.dairyfarm.cattle.repository.CattleRepository;
 import com.innovation.dairyfarm.common.exception.BusinessRuleViolationException;
 import com.innovation.dairyfarm.common.exception.DuplicateResourceException;
 import com.innovation.dairyfarm.common.exception.ResourceNotFoundException;
+import com.innovation.dairyfarm.farm.domain.Farm;
 import com.innovation.dairyfarm.milkproduction.domain.MilkProduction;
 import com.innovation.dairyfarm.milkproduction.dto.MilkProductionRequest;
 import com.innovation.dairyfarm.milkproduction.repository.MilkProductionRepository;
@@ -25,11 +25,11 @@ public class MilkProductionServiceImpl implements MilkProductionService {
     private final CattleRepository cattleRepository;
 
     @Override
-    public MilkProduction create(User owner, MilkProductionRequest request) {
-        Cattle cattle = requireCattle(owner.getId(), request.cattleId());
+    public MilkProduction create(Farm farm, MilkProductionRequest request) {
+        Cattle cattle = requireCattle(farm.getId(), request.cattleId());
         requireNotDeceased(cattle);
-        if (milkProductionRepository.existsByCattleIdAndRecordDateAndShiftAndOwnerId(
-                cattle.getId(), request.recordDate(), request.shift(), owner.getId())) {
+        if (milkProductionRepository.existsByCattleIdAndRecordDateAndShiftAndFarmId(
+                cattle.getId(), request.recordDate(), request.shift(), farm.getId())) {
             throw new DuplicateResourceException("A " + request.shift() + " milk production record already "
                     + "exists for cattle " + cattle.getTagNumber() + " on " + request.recordDate());
         }
@@ -39,17 +39,17 @@ public class MilkProductionServiceImpl implements MilkProductionService {
                 .shift(request.shift())
                 .quantityLiters(request.quantityLiters())
                 .build();
-        record.setOwner(owner);
+        record.setFarm(farm);
         return milkProductionRepository.save(record);
     }
 
     @Override
-    public MilkProduction update(Long ownerId, Long id, MilkProductionRequest request) {
-        MilkProduction record = findById(ownerId, id);
-        Cattle cattle = requireCattle(ownerId, request.cattleId());
+    public MilkProduction update(Long farmId, Long id, MilkProductionRequest request) {
+        MilkProduction record = findById(farmId, id);
+        Cattle cattle = requireCattle(farmId, request.cattleId());
         requireNotDeceased(cattle);
-        if (milkProductionRepository.existsByCattleIdAndRecordDateAndShiftAndOwnerIdAndIdNot(
-                cattle.getId(), request.recordDate(), request.shift(), ownerId, id)) {
+        if (milkProductionRepository.existsByCattleIdAndRecordDateAndShiftAndFarmIdAndIdNot(
+                cattle.getId(), request.recordDate(), request.shift(), farmId, id)) {
             throw new DuplicateResourceException("A " + request.shift() + " milk production record already "
                     + "exists for cattle " + cattle.getTagNumber() + " on " + request.recordDate());
         }
@@ -61,33 +61,33 @@ public class MilkProductionServiceImpl implements MilkProductionService {
     }
 
     @Override
-    public void delete(Long ownerId, Long id) {
-        MilkProduction record = findById(ownerId, id);
+    public void delete(Long farmId, Long id) {
+        MilkProduction record = findById(farmId, id);
         milkProductionRepository.delete(record);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public MilkProduction findById(Long ownerId, Long id) {
-        return milkProductionRepository.findByIdAndOwnerId(id, ownerId)
+    public MilkProduction findById(Long farmId, Long id) {
+        return milkProductionRepository.findByIdAndFarmId(id, farmId)
                 .orElseThrow(() -> new ResourceNotFoundException("Milk production record not found with id " + id));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<MilkProduction> findAll(Long ownerId) {
-        return milkProductionRepository.findAllByOwnerId(ownerId);
+    public List<MilkProduction> findAll(Long farmId) {
+        return milkProductionRepository.findAllByFarmId(farmId);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<MilkProduction> findByCattleId(Long ownerId, Long cattleId) {
-        requireCattle(ownerId, cattleId);
-        return milkProductionRepository.findByCattleIdAndOwnerId(cattleId, ownerId);
+    public List<MilkProduction> findByCattleId(Long farmId, Long cattleId) {
+        requireCattle(farmId, cattleId);
+        return milkProductionRepository.findByCattleIdAndFarmId(cattleId, farmId);
     }
 
-    private Cattle requireCattle(Long ownerId, Long cattleId) {
-        return cattleRepository.findByIdAndOwnerId(cattleId, ownerId)
+    private Cattle requireCattle(Long farmId, Long cattleId) {
+        return cattleRepository.findByIdAndFarmId(cattleId, farmId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cattle not found with id " + cattleId));
     }
 

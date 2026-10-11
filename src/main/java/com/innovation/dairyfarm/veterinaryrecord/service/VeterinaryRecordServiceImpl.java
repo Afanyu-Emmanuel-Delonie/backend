@@ -1,11 +1,11 @@
 package com.innovation.dairyfarm.veterinaryrecord.service;
 
-import com.innovation.dairyfarm.auth.domain.User;
 import com.innovation.dairyfarm.cattle.domain.Cattle;
 import com.innovation.dairyfarm.cattle.domain.HealthStatus;
 import com.innovation.dairyfarm.cattle.repository.CattleRepository;
 import com.innovation.dairyfarm.common.exception.BusinessRuleViolationException;
 import com.innovation.dairyfarm.common.exception.ResourceNotFoundException;
+import com.innovation.dairyfarm.farm.domain.Farm;
 import com.innovation.dairyfarm.veterinaryrecord.domain.VeterinaryRecord;
 import com.innovation.dairyfarm.veterinaryrecord.dto.VeterinaryRecordRequest;
 import com.innovation.dairyfarm.veterinaryrecord.repository.VeterinaryRecordRepository;
@@ -24,8 +24,8 @@ public class VeterinaryRecordServiceImpl implements VeterinaryRecordService {
     private final CattleRepository cattleRepository;
 
     @Override
-    public VeterinaryRecord create(User owner, VeterinaryRecordRequest request) {
-        Cattle cattle = requireCattle(owner.getId(), request.cattleId());
+    public VeterinaryRecord create(Farm farm, VeterinaryRecordRequest request) {
+        Cattle cattle = requireCattle(farm.getId(), request.cattleId());
         requireNotDeceased(cattle);
         requireFollowUpAfterVisit(request);
 
@@ -40,7 +40,7 @@ public class VeterinaryRecordServiceImpl implements VeterinaryRecordService {
                 .followUpDate(request.followUpDate())
                 .resolved(Boolean.FALSE)
                 .build();
-        record.setOwner(owner);
+        record.setFarm(farm);
 
         // BR-11: a new veterinary visit puts the animal under treatment.
         cattle.setHealthStatus(HealthStatus.UNDER_TREATMENT);
@@ -50,9 +50,9 @@ public class VeterinaryRecordServiceImpl implements VeterinaryRecordService {
     }
 
     @Override
-    public VeterinaryRecord update(Long ownerId, Long id, VeterinaryRecordRequest request) {
-        VeterinaryRecord record = findById(ownerId, id);
-        Cattle cattle = requireCattle(ownerId, request.cattleId());
+    public VeterinaryRecord update(Long farmId, Long id, VeterinaryRecordRequest request) {
+        VeterinaryRecord record = findById(farmId, id);
+        Cattle cattle = requireCattle(farmId, request.cattleId());
         requireNotDeceased(cattle);
         requireFollowUpAfterVisit(request);
 
@@ -68,34 +68,34 @@ public class VeterinaryRecordServiceImpl implements VeterinaryRecordService {
     }
 
     @Override
-    public void delete(Long ownerId, Long id) {
-        VeterinaryRecord record = findById(ownerId, id);
+    public void delete(Long farmId, Long id) {
+        VeterinaryRecord record = findById(farmId, id);
         veterinaryRecordRepository.delete(record);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public VeterinaryRecord findById(Long ownerId, Long id) {
-        return veterinaryRecordRepository.findByIdAndOwnerId(id, ownerId)
+    public VeterinaryRecord findById(Long farmId, Long id) {
+        return veterinaryRecordRepository.findByIdAndFarmId(id, farmId)
                 .orElseThrow(() -> new ResourceNotFoundException("Veterinary record not found with id " + id));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<VeterinaryRecord> findAll(Long ownerId) {
-        return veterinaryRecordRepository.findAllByOwnerId(ownerId);
+    public List<VeterinaryRecord> findAll(Long farmId) {
+        return veterinaryRecordRepository.findAllByFarmId(farmId);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<VeterinaryRecord> findByCattleId(Long ownerId, Long cattleId) {
-        requireCattle(ownerId, cattleId);
-        return veterinaryRecordRepository.findByCattleIdAndOwnerId(cattleId, ownerId);
+    public List<VeterinaryRecord> findByCattleId(Long farmId, Long cattleId) {
+        requireCattle(farmId, cattleId);
+        return veterinaryRecordRepository.findByCattleIdAndFarmId(cattleId, farmId);
     }
 
     @Override
-    public VeterinaryRecord resolve(Long ownerId, Long id) {
-        VeterinaryRecord record = findById(ownerId, id);
+    public VeterinaryRecord resolve(Long farmId, Long id) {
+        VeterinaryRecord record = findById(farmId, id);
         if (Boolean.TRUE.equals(record.getResolved())) {
             throw new BusinessRuleViolationException("Veterinary record " + id + " is already resolved");
         }
@@ -109,8 +109,8 @@ public class VeterinaryRecordServiceImpl implements VeterinaryRecordService {
         return veterinaryRecordRepository.save(record);
     }
 
-    private Cattle requireCattle(Long ownerId, Long cattleId) {
-        return cattleRepository.findByIdAndOwnerId(cattleId, ownerId)
+    private Cattle requireCattle(Long farmId, Long cattleId) {
+        return cattleRepository.findByIdAndFarmId(cattleId, farmId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cattle not found with id " + cattleId));
     }
 

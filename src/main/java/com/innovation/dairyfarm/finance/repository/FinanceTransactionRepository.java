@@ -7,6 +7,6 @@ import java.util.List;
 import java.util.Optional;
 
 public interface FinanceTransactionRepository extends JpaRepository<FinanceTransaction, Long> {
-    List<FinanceTransaction> findAllByOwnerId(Long ownerId);
-    Optional<FinanceTransaction> findByIdAndOwnerId(Long id, Long ownerId);
+    List<FinanceTransaction> findAllByFarmId(Long farmId);
+    Optional<FinanceTransaction> findByIdAndFarmId(Long id, Long farmId);
 }

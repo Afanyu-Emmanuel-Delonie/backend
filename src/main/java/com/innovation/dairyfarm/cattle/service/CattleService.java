@@ -1,15 +1,15 @@
 package com.innovation.dairyfarm.cattle.service;
 
-import com.innovation.dairyfarm.auth.domain.User;
 import com.innovation.dairyfarm.cattle.domain.Cattle;
 import com.innovation.dairyfarm.cattle.dto.CattleRequest;
+import com.innovation.dairyfarm.farm.domain.Farm;
 
 import java.util.List;
 
 public interface CattleService {
-    Cattle create(User owner, CattleRequest request);
-    Cattle update(Long ownerId, Long id, CattleRequest request);
-    void delete(Long ownerId, Long id);
-    Cattle findById(Long ownerId, Long id);
-    List<Cattle> findAll(Long ownerId);
+    Cattle create(Farm farm, CattleRequest request);
+    Cattle update(Long farmId, Long id, CattleRequest request);
+    void delete(Long farmId, Long id);
+    Cattle findById(Long farmId, Long id);
+    List<Cattle> findAll(Long farmId);
 }

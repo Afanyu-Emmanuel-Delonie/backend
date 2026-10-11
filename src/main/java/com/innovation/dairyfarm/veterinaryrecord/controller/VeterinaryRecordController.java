@@ -37,38 +37,38 @@ public class VeterinaryRecordController {
     public ResponseEntity<VeterinaryRecordResponse> create(
             @Valid @RequestBody VeterinaryRecordRequest request, Authentication authentication) {
         VeterinaryRecordResponse response =
-                VeterinaryRecordResponse.from(veterinaryRecordService.create(CurrentUser.user(authentication), request));
+                VeterinaryRecordResponse.from(veterinaryRecordService.create(CurrentUser.farm(authentication), request));
         return ResponseEntity.created(URI.create("/api/veterinary-records/" + response.id())).body(response);
     }
 
     @GetMapping
     public List<VeterinaryRecordResponse> findAll(@RequestParam(required = false) Long cattleId, Authentication authentication) {
-        Long ownerId = CurrentUser.id(authentication);
+        Long farmId = CurrentUser.farmId(authentication);
         List<VeterinaryRecord> records = cattleId != null
-                ? veterinaryRecordService.findByCattleId(ownerId, cattleId)
-                : veterinaryRecordService.findAll(ownerId);
+                ? veterinaryRecordService.findByCattleId(farmId, cattleId)
+                : veterinaryRecordService.findAll(farmId);
         return records.stream().map(VeterinaryRecordResponse::from).toList();
     }
 
     @GetMapping("/{id}")
     public VeterinaryRecordResponse findById(@PathVariable Long id, Authentication authentication) {
-        return VeterinaryRecordResponse.from(veterinaryRecordService.findById(CurrentUser.id(authentication), id));
+        return VeterinaryRecordResponse.from(veterinaryRecordService.findById(CurrentUser.farmId(authentication), id));
     }
 
     @PutMapping("/{id}")
     public VeterinaryRecordResponse update(
             @PathVariable Long id, @Valid @RequestBody VeterinaryRecordRequest request, Authentication authentication) {
-        return VeterinaryRecordResponse.from(veterinaryRecordService.update(CurrentUser.id(authentication), id, request));
+        return VeterinaryRecordResponse.from(veterinaryRecordService.update(CurrentUser.farmId(authentication), id, request));
     }
 
     @PatchMapping("/{id}/resolve")
     public VeterinaryRecordResponse resolve(@PathVariable Long id, Authentication authentication) {
-        return VeterinaryRecordResponse.from(veterinaryRecordService.resolve(CurrentUser.id(authentication), id));
+        return VeterinaryRecordResponse.from(veterinaryRecordService.resolve(CurrentUser.farmId(authentication), id));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id, Authentication authentication) {
-        veterinaryRecordService.delete(CurrentUser.id(authentication), id);
+        veterinaryRecordService.delete(CurrentUser.farmId(authentication), id);
     }
 }

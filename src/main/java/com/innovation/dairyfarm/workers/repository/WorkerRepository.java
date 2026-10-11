@@ -7,6 +7,6 @@ import java.util.List;
 import java.util.Optional;
 
 public interface WorkerRepository extends JpaRepository<Worker, Long> {
-    List<Worker> findAllByOwnerId(Long ownerId);
-    Optional<Worker> findByIdAndOwnerId(Long id, Long ownerId);
+    List<Worker> findAllByFarmId(Long farmId);
+    Optional<Worker> findByIdAndFarmId(Long id, Long farmId);
 }

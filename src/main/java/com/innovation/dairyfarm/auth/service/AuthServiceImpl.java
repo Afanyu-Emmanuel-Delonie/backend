@@ -14,12 +14,19 @@ import com.innovation.dairyfarm.auth.dto.ResetPasswordRequest;
 import com.innovation.dairyfarm.auth.dto.UpdateProfileRequest;
 import com.innovation.dairyfarm.auth.dto.UserResponse;
 import com.innovation.dairyfarm.auth.dto.VerifyOtpRequest;
+import com.innovation.dairyfarm.auth.dto.JoinRequest;
 import com.innovation.dairyfarm.auth.repository.PasswordResetTokenRepository;
 import com.innovation.dairyfarm.auth.repository.UserRepository;
+import com.innovation.dairyfarm.common.exception.BusinessRuleViolationException;
 import com.innovation.dairyfarm.common.exception.DuplicateResourceException;
 import com.innovation.dairyfarm.common.exception.EmailNotVerifiedException;
 import com.innovation.dairyfarm.common.exception.InvalidCredentialsException;
 import com.innovation.dairyfarm.common.exception.ResourceNotFoundException;
+import com.innovation.dairyfarm.farm.domain.Farm;
+import com.innovation.dairyfarm.farm.repository.FarmRepository;
+import com.innovation.dairyfarm.invite.domain.Invite;
+import com.innovation.dairyfarm.invite.domain.InviteStatus;
+import com.innovation.dairyfarm.invite.repository.InviteRepository;
 import com.innovation.dairyfarm.security.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,6 +48,8 @@ public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final FarmRepository farmRepository;
+    private final InviteRepository inviteRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final OtpService otpService;
@@ -55,17 +64,48 @@ public class AuthServiceImpl implements AuthService {
             throw new DuplicateResourceException("An account with email '" + request.email() + "' already exists");
         }
 
+        Farm farm = farmRepository.save(Farm.builder().name(request.farmName()).build());
+
         User user = User.builder()
                 .email(request.email())
                 .passwordHash(passwordEncoder.encode(request.password()))
                 .fullName(request.fullName())
-                .farmName(request.farmName())
+                .farm(farm)
                 .phone(request.phone())
                 .role(Role.FARM_OWNER)
                 .emailVerified(false)
                 .enabled(true)
                 .build();
         userRepository.save(user);
+
+        otpService.generateAndSend(user.getEmail(), OtpPurpose.SIGNUP_VERIFICATION);
+    }
+
+    @Override
+    public void join(JoinRequest request) {
+        Invite invite = inviteRepository.findById(request.inviteId())
+                .orElseThrow(() -> new BusinessRuleViolationException("This invite is no longer valid"));
+        if (invite.getStatus() != InviteStatus.PENDING) {
+            throw new BusinessRuleViolationException("This invite is no longer valid");
+        }
+        if (userRepository.existsByEmail(invite.getEmail())) {
+            throw new DuplicateResourceException("An account with email '" + invite.getEmail() + "' already exists");
+        }
+
+        User user = User.builder()
+                .email(invite.getEmail())
+                .passwordHash(passwordEncoder.encode(request.password()))
+                .fullName(request.fullName())
+                .farm(invite.getFarm())
+                .phone(request.phone())
+                .role(invite.getRole())
+                .emailVerified(false)
+                .enabled(true)
+                .build();
+        userRepository.save(user);
+
+        invite.setStatus(InviteStatus.ACCEPTED);
+        inviteRepository.save(invite);
 
         otpService.generateAndSend(user.getEmail(), OtpPurpose.SIGNUP_VERIFICATION);
     }
@@ -160,9 +200,15 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         user.setFullName(request.fullName());
-        user.setFarmName(request.farmName());
         user.setPhone(request.phone());
-        return UserResponse.from(userRepository.save(user));
+        userRepository.save(user);
+
+        // Renaming the farm affects everyone on it, not just the caller.
+        Farm farm = user.getFarm();
+        farm.setName(request.farmName());
+        farmRepository.save(farm);
+
+        return UserResponse.from(user);
     }
 
     @Override

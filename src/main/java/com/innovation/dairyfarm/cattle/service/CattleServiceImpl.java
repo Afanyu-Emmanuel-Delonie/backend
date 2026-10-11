@@ -1,11 +1,11 @@
 package com.innovation.dairyfarm.cattle.service;
 
-import com.innovation.dairyfarm.auth.domain.User;
 import com.innovation.dairyfarm.cattle.domain.Cattle;
 import com.innovation.dairyfarm.cattle.dto.CattleRequest;
 import com.innovation.dairyfarm.cattle.repository.CattleRepository;
 import com.innovation.dairyfarm.common.exception.DuplicateResourceException;
 import com.innovation.dairyfarm.common.exception.ResourceNotFoundException;
+import com.innovation.dairyfarm.farm.domain.Farm;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,8 +20,8 @@ public class CattleServiceImpl implements CattleService {
     private final CattleRepository cattleRepository;
 
     @Override
-    public Cattle create(User owner, CattleRequest request) {
-        if (cattleRepository.existsByTagNumberAndOwnerId(request.tagNumber(), owner.getId())) {
+    public Cattle create(Farm farm, CattleRequest request) {
+        if (cattleRepository.existsByTagNumberAndFarmId(request.tagNumber(), farm.getId())) {
             throw new DuplicateResourceException("Cattle with tagNumber '" + request.tagNumber() + "' already exists");
         }
         Cattle cattle = Cattle.builder()
@@ -36,14 +36,14 @@ public class CattleServiceImpl implements CattleService {
                 .soldDate(request.soldDate())
                 .soldPrice(request.soldPrice())
                 .build();
-        cattle.setOwner(owner);
+        cattle.setFarm(farm);
         return cattleRepository.save(cattle);
     }
 
     @Override
-    public Cattle update(Long ownerId, Long id, CattleRequest request) {
-        Cattle cattle = findById(ownerId, id);
-        if (cattleRepository.existsByTagNumberAndOwnerIdAndIdNot(request.tagNumber(), ownerId, id)) {
+    public Cattle update(Long farmId, Long id, CattleRequest request) {
+        Cattle cattle = findById(farmId, id);
+        if (cattleRepository.existsByTagNumberAndFarmIdAndIdNot(request.tagNumber(), farmId, id)) {
             throw new DuplicateResourceException("Cattle with tagNumber '" + request.tagNumber() + "' already exists");
         }
         cattle.setTagNumber(request.tagNumber());
@@ -60,21 +60,21 @@ public class CattleServiceImpl implements CattleService {
     }
 
     @Override
-    public void delete(Long ownerId, Long id) {
-        Cattle cattle = findById(ownerId, id);
+    public void delete(Long farmId, Long id) {
+        Cattle cattle = findById(farmId, id);
         cattleRepository.delete(cattle);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Cattle findById(Long ownerId, Long id) {
-        return cattleRepository.findByIdAndOwnerId(id, ownerId)
+    public Cattle findById(Long farmId, Long id) {
+        return cattleRepository.findByIdAndFarmId(id, farmId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cattle not found with id " + id));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Cattle> findAll(Long ownerId) {
-        return cattleRepository.findAllByOwnerId(ownerId);
+    public List<Cattle> findAll(Long farmId) {
+        return cattleRepository.findAllByFarmId(farmId);
     }
 }

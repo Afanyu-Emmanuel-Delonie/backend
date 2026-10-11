@@ -60,6 +60,8 @@ public class SecurityConfig {
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(restAuthenticationEntryPoint))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
+                        // The join page fetches this before the invitee has an account to authenticate with.
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/invites/*/public").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
                         .anyRequest().authenticated()
                 )

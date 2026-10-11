@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.net.URI;
 import java.util.List;
 
-/** BR-05: create, read, update and delete operations for Cattle, scoped to the authenticated owner. */
+/** BR-05: create, read, update and delete operations for Cattle, scoped to the authenticated account's farm. */
 @RestController
 @RequestMapping("/api/cattle")
 @RequiredArgsConstructor
@@ -32,28 +32,28 @@ public class CattleController {
 
     @PostMapping
     public ResponseEntity<CattleResponse> create(@Valid @RequestBody CattleRequest request, Authentication authentication) {
-        CattleResponse response = CattleResponse.from(cattleService.create(CurrentUser.user(authentication), request));
+        CattleResponse response = CattleResponse.from(cattleService.create(CurrentUser.farm(authentication), request));
         return ResponseEntity.created(URI.create("/api/cattle/" + response.id())).body(response);
     }
 
     @GetMapping
     public List<CattleResponse> findAll(Authentication authentication) {
-        return cattleService.findAll(CurrentUser.id(authentication)).stream().map(CattleResponse::from).toList();
+        return cattleService.findAll(CurrentUser.farmId(authentication)).stream().map(CattleResponse::from).toList();
     }
 
     @GetMapping("/{id}")
     public CattleResponse findById(@PathVariable Long id, Authentication authentication) {
-        return CattleResponse.from(cattleService.findById(CurrentUser.id(authentication), id));
+        return CattleResponse.from(cattleService.findById(CurrentUser.farmId(authentication), id));
     }
 
     @PutMapping("/{id}")
     public CattleResponse update(@PathVariable Long id, @Valid @RequestBody CattleRequest request, Authentication authentication) {
-        return CattleResponse.from(cattleService.update(CurrentUser.id(authentication), id, request));
+        return CattleResponse.from(cattleService.update(CurrentUser.farmId(authentication), id, request));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id, Authentication authentication) {
-        cattleService.delete(CurrentUser.id(authentication), id);
+        cattleService.delete(CurrentUser.farmId(authentication), id);
     }
 }

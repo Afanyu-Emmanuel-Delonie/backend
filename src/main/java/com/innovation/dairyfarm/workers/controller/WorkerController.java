@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.net.URI;
 import java.util.List;
 
-/** BR-15: create, read, update and delete operations for Workers, scoped to the authenticated owner. */
+/** BR-15: create, read, update and delete operations for Workers, scoped to the authenticated account's farm. */
 @RestController
 @RequestMapping("/api/workers")
 @RequiredArgsConstructor
@@ -32,28 +32,28 @@ public class WorkerController {
 
     @PostMapping
     public ResponseEntity<WorkerResponse> create(@Valid @RequestBody WorkerRequest request, Authentication authentication) {
-        WorkerResponse response = WorkerResponse.from(workerService.create(CurrentUser.user(authentication), request));
+        WorkerResponse response = WorkerResponse.from(workerService.create(CurrentUser.farm(authentication), request));
         return ResponseEntity.created(URI.create("/api/workers/" + response.id())).body(response);
     }
 
     @GetMapping
     public List<WorkerResponse> findAll(Authentication authentication) {
-        return workerService.findAll(CurrentUser.id(authentication)).stream().map(WorkerResponse::from).toList();
+        return workerService.findAll(CurrentUser.farmId(authentication)).stream().map(WorkerResponse::from).toList();
     }
 
     @GetMapping("/{id}")
     public WorkerResponse findById(@PathVariable Long id, Authentication authentication) {
-        return WorkerResponse.from(workerService.findById(CurrentUser.id(authentication), id));
+        return WorkerResponse.from(workerService.findById(CurrentUser.farmId(authentication), id));
     }
 
     @PutMapping("/{id}")
     public WorkerResponse update(@PathVariable Long id, @Valid @RequestBody WorkerRequest request, Authentication authentication) {
-        return WorkerResponse.from(workerService.update(CurrentUser.id(authentication), id, request));
+        return WorkerResponse.from(workerService.update(CurrentUser.farmId(authentication), id, request));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id, Authentication authentication) {
-        workerService.delete(CurrentUser.id(authentication), id);
+        workerService.delete(CurrentUser.farmId(authentication), id);
     }
 }

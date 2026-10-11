@@ -7,8 +7,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface CattleRepository extends JpaRepository<Cattle, Long> {
-    List<Cattle> findAllByOwnerId(Long ownerId);
-    Optional<Cattle> findByIdAndOwnerId(Long id, Long ownerId);
-    boolean existsByTagNumberAndOwnerId(String tagNumber, Long ownerId);
-    boolean existsByTagNumberAndOwnerIdAndIdNot(String tagNumber, Long ownerId, Long id);
+    List<Cattle> findAllByFarmId(Long farmId);
+    Optional<Cattle> findByIdAndFarmId(Long id, Long farmId);
+    boolean existsByTagNumberAndFarmId(String tagNumber, Long farmId);
+    boolean existsByTagNumberAndFarmIdAndIdNot(String tagNumber, Long farmId, Long id);
 }

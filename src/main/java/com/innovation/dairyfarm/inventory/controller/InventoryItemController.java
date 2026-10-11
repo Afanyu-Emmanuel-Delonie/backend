@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.net.URI;
 import java.util.List;
 
-/** BR-14: create, read, update and delete operations for Inventory Items, scoped to the authenticated owner. */
+/** BR-14: create, read, update and delete operations for Inventory Items, scoped to the authenticated account's farm. */
 @RestController
 @RequestMapping("/api/inventory-items")
 @RequiredArgsConstructor
@@ -34,30 +34,30 @@ public class InventoryItemController {
     public ResponseEntity<InventoryItemResponse> create(
             @Valid @RequestBody InventoryItemRequest request, Authentication authentication) {
         InventoryItemResponse response =
-                InventoryItemResponse.from(inventoryItemService.create(CurrentUser.user(authentication), request));
+                InventoryItemResponse.from(inventoryItemService.create(CurrentUser.farm(authentication), request));
         return ResponseEntity.created(URI.create("/api/inventory-items/" + response.id())).body(response);
     }
 
     @GetMapping
     public List<InventoryItemResponse> findAll(Authentication authentication) {
-        return inventoryItemService.findAll(CurrentUser.id(authentication)).stream()
+        return inventoryItemService.findAll(CurrentUser.farmId(authentication)).stream()
                 .map(InventoryItemResponse::from).toList();
     }
 
     @GetMapping("/{id}")
     public InventoryItemResponse findById(@PathVariable Long id, Authentication authentication) {
-        return InventoryItemResponse.from(inventoryItemService.findById(CurrentUser.id(authentication), id));
+        return InventoryItemResponse.from(inventoryItemService.findById(CurrentUser.farmId(authentication), id));
     }
 
     @PutMapping("/{id}")
     public InventoryItemResponse update(
             @PathVariable Long id, @Valid @RequestBody InventoryItemRequest request, Authentication authentication) {
-        return InventoryItemResponse.from(inventoryItemService.update(CurrentUser.id(authentication), id, request));
+        return InventoryItemResponse.from(inventoryItemService.update(CurrentUser.farmId(authentication), id, request));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id, Authentication authentication) {
-        inventoryItemService.delete(CurrentUser.id(authentication), id);
+        inventoryItemService.delete(CurrentUser.farmId(authentication), id);
     }
 }

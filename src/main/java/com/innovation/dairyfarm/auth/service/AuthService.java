@@ -2,6 +2,7 @@ package com.innovation.dairyfarm.auth.service;
 
 import com.innovation.dairyfarm.auth.dto.ChangePasswordRequest;
 import com.innovation.dairyfarm.auth.dto.ForgotPasswordRequest;
+import com.innovation.dairyfarm.auth.dto.JoinRequest;
 import com.innovation.dairyfarm.auth.dto.LoginRequest;
 import com.innovation.dairyfarm.auth.dto.OtpVerifyResponse;
 import com.innovation.dairyfarm.auth.dto.RegisterRequest;
@@ -13,6 +14,9 @@ import com.innovation.dairyfarm.auth.dto.VerifyOtpRequest;
 
 public interface AuthService {
     void register(RegisterRequest request);
+
+    /** Accepting a pending invite - creates the account on the inviting farm instead of a new one. */
+    void join(JoinRequest request);
 
     /** Checks credentials and returns a signed-in session directly. */
     OtpVerifyResponse login(LoginRequest request);

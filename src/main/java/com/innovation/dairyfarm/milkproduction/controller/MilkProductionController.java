@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.net.URI;
 import java.util.List;
 
-/** BR-06: create, read, update and delete operations for Milk Production, scoped to the authenticated owner. */
+/** BR-06: create, read, update and delete operations for Milk Production, scoped to the authenticated account's farm. */
 @RestController
 @RequestMapping("/api/milk-productions")
 @RequiredArgsConstructor
@@ -36,33 +36,33 @@ public class MilkProductionController {
     public ResponseEntity<MilkProductionResponse> create(
             @Valid @RequestBody MilkProductionRequest request, Authentication authentication) {
         MilkProductionResponse response =
-                MilkProductionResponse.from(milkProductionService.create(CurrentUser.user(authentication), request));
+                MilkProductionResponse.from(milkProductionService.create(CurrentUser.farm(authentication), request));
         return ResponseEntity.created(URI.create("/api/milk-productions/" + response.id())).body(response);
     }
 
     @GetMapping
     public List<MilkProductionResponse> findAll(@RequestParam(required = false) Long cattleId, Authentication authentication) {
-        Long ownerId = CurrentUser.id(authentication);
+        Long farmId = CurrentUser.farmId(authentication);
         List<MilkProduction> records = cattleId != null
-                ? milkProductionService.findByCattleId(ownerId, cattleId)
-                : milkProductionService.findAll(ownerId);
+                ? milkProductionService.findByCattleId(farmId, cattleId)
+                : milkProductionService.findAll(farmId);
         return records.stream().map(MilkProductionResponse::from).toList();
     }
 
     @GetMapping("/{id}")
     public MilkProductionResponse findById(@PathVariable Long id, Authentication authentication) {
-        return MilkProductionResponse.from(milkProductionService.findById(CurrentUser.id(authentication), id));
+        return MilkProductionResponse.from(milkProductionService.findById(CurrentUser.farmId(authentication), id));
     }
 
     @PutMapping("/{id}")
     public MilkProductionResponse update(
             @PathVariable Long id, @Valid @RequestBody MilkProductionRequest request, Authentication authentication) {
-        return MilkProductionResponse.from(milkProductionService.update(CurrentUser.id(authentication), id, request));
+        return MilkProductionResponse.from(milkProductionService.update(CurrentUser.farmId(authentication), id, request));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id, Authentication authentication) {
-        milkProductionService.delete(CurrentUser.id(authentication), id);
+        milkProductionService.delete(CurrentUser.farmId(authentication), id);
     }
 }

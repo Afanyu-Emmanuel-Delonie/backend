@@ -1,15 +1,15 @@
 package com.innovation.dairyfarm.inventory.service;
 
-import com.innovation.dairyfarm.auth.domain.User;
+import com.innovation.dairyfarm.farm.domain.Farm;
 import com.innovation.dairyfarm.inventory.domain.InventoryItem;
 import com.innovation.dairyfarm.inventory.dto.InventoryItemRequest;
 
 import java.util.List;
 
 public interface InventoryItemService {
-    InventoryItem create(User owner, InventoryItemRequest request);
-    InventoryItem update(Long ownerId, Long id, InventoryItemRequest request);
-    void delete(Long ownerId, Long id);
-    InventoryItem findById(Long ownerId, Long id);
-    List<InventoryItem> findAll(Long ownerId);
+    InventoryItem create(Farm farm, InventoryItemRequest request);
+    InventoryItem update(Long farmId, Long id, InventoryItemRequest request);
+    void delete(Long farmId, Long id);
+    InventoryItem findById(Long farmId, Long id);
+    List<InventoryItem> findAll(Long farmId);
 }

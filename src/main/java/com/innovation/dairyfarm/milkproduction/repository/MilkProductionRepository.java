@@ -9,10 +9,10 @@ import java.util.List;
 import java.util.Optional;
 
 public interface MilkProductionRepository extends JpaRepository<MilkProduction, Long> {
-    List<MilkProduction> findAllByOwnerId(Long ownerId);
-    List<MilkProduction> findByCattleIdAndOwnerId(Long cattleId, Long ownerId);
-    Optional<MilkProduction> findByIdAndOwnerId(Long id, Long ownerId);
-    boolean existsByCattleIdAndRecordDateAndShiftAndOwnerId(Long cattleId, LocalDate recordDate, Shift shift, Long ownerId);
-    boolean existsByCattleIdAndRecordDateAndShiftAndOwnerIdAndIdNot(
-            Long cattleId, LocalDate recordDate, Shift shift, Long ownerId, Long id);
+    List<MilkProduction> findAllByFarmId(Long farmId);
+    List<MilkProduction> findByCattleIdAndFarmId(Long cattleId, Long farmId);
+    Optional<MilkProduction> findByIdAndFarmId(Long id, Long farmId);
+    boolean existsByCattleIdAndRecordDateAndShiftAndFarmId(Long cattleId, LocalDate recordDate, Shift shift, Long farmId);
+    boolean existsByCattleIdAndRecordDateAndShiftAndFarmIdAndIdNot(
+            Long cattleId, LocalDate recordDate, Shift shift, Long farmId, Long id);
 }

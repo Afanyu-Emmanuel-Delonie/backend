@@ -20,7 +20,7 @@ public record UserResponse(
                 user.getId(),
                 user.getEmail(),
                 user.getFullName(),
-                user.getFarmName(),
+                user.getFarm().getName(),
                 user.getPhone(),
                 user.getRole(),
                 user.isEmailVerified(),

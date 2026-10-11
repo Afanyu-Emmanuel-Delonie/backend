@@ -1,15 +1,15 @@
 package com.innovation.dairyfarm.finance.service;
 
-import com.innovation.dairyfarm.auth.domain.User;
+import com.innovation.dairyfarm.farm.domain.Farm;
 import com.innovation.dairyfarm.finance.domain.FinanceTransaction;
 import com.innovation.dairyfarm.finance.dto.FinanceTransactionRequest;
 
 import java.util.List;
 
 public interface FinanceTransactionService {
-    FinanceTransaction create(User owner, FinanceTransactionRequest request);
-    FinanceTransaction update(Long ownerId, Long id, FinanceTransactionRequest request);
-    void delete(Long ownerId, Long id);
-    FinanceTransaction findById(Long ownerId, Long id);
-    List<FinanceTransaction> findAll(Long ownerId);
+    FinanceTransaction create(Farm farm, FinanceTransactionRequest request);
+    FinanceTransaction update(Long farmId, Long id, FinanceTransactionRequest request);
+    void delete(Long farmId, Long id);
+    FinanceTransaction findById(Long farmId, Long id);
+    List<FinanceTransaction> findAll(Long farmId);
 }

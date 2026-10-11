@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.net.URI;
 import java.util.List;
 
-/** BR-13: create, read, update and delete operations for Finance Transactions, scoped to the authenticated owner. */
+/** BR-13: create, read, update and delete operations for Finance Transactions, scoped to the authenticated account's farm. */
 @RestController
 @RequestMapping("/api/finance-transactions")
 @RequiredArgsConstructor
@@ -34,30 +34,30 @@ public class FinanceTransactionController {
     public ResponseEntity<FinanceTransactionResponse> create(
             @Valid @RequestBody FinanceTransactionRequest request, Authentication authentication) {
         FinanceTransactionResponse response =
-                FinanceTransactionResponse.from(financeTransactionService.create(CurrentUser.user(authentication), request));
+                FinanceTransactionResponse.from(financeTransactionService.create(CurrentUser.farm(authentication), request));
         return ResponseEntity.created(URI.create("/api/finance-transactions/" + response.id())).body(response);
     }
 
     @GetMapping
     public List<FinanceTransactionResponse> findAll(Authentication authentication) {
-        return financeTransactionService.findAll(CurrentUser.id(authentication)).stream()
+        return financeTransactionService.findAll(CurrentUser.farmId(authentication)).stream()
                 .map(FinanceTransactionResponse::from).toList();
     }
 
     @GetMapping("/{id}")
     public FinanceTransactionResponse findById(@PathVariable Long id, Authentication authentication) {
-        return FinanceTransactionResponse.from(financeTransactionService.findById(CurrentUser.id(authentication), id));
+        return FinanceTransactionResponse.from(financeTransactionService.findById(CurrentUser.farmId(authentication), id));
     }
 
     @PutMapping("/{id}")
     public FinanceTransactionResponse update(
             @PathVariable Long id, @Valid @RequestBody FinanceTransactionRequest request, Authentication authentication) {
-        return FinanceTransactionResponse.from(financeTransactionService.update(CurrentUser.id(authentication), id, request));
+        return FinanceTransactionResponse.from(financeTransactionService.update(CurrentUser.farmId(authentication), id, request));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id, Authentication authentication) {
-        financeTransactionService.delete(CurrentUser.id(authentication), id);
+        financeTransactionService.delete(CurrentUser.farmId(authentication), id);
     }
 }
