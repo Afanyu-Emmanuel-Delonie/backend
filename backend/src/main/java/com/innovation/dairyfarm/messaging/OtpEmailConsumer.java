@@ -57,6 +57,11 @@ public class OtpEmailConsumer {
             mailSender.send(mimeMessage);
         } catch (MessagingException | MailException ex) {
             log.error("Failed to send {} email to {}: {}", message.purpose(), message.to(), ex.getMessage());
+        } catch (RuntimeException ex) {
+            // Anything else (a malformed message, a mail-sender misconfiguration) must still
+            // not propagate: an uncaught exception here would have the listener container
+            // requeue-and-redeliver this message forever instead of just dropping one email.
+            log.error("Unexpected failure sending {} email to {}: {}", message.purpose(), message.to(), ex.getMessage(), ex);
         }
     }
 }
